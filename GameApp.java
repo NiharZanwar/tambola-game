@@ -29,10 +29,11 @@ class Dealer implements Runnable {
 	/************************* WRITE CODE FOR THIS METHOD *******************/
 	public void run() {
 		
-		/* STEP-1: write code to take a lock on gameData using lock1*/ 
+		synchronized(gameData.lock1)
 		{
 			// dealer executes until either (or both) players declare success 
-			/* STEP-2: specify condition for player1 and specify condition for player2 */ {
+			/* STEP-2: specify condition for player1 and specify condition for player2 */ 
+			{
 				// set number announced flag to false before announcing the number
 				gameData.noAnnouncedFlag = false;
 				
