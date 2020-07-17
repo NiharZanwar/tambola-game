@@ -1,4 +1,7 @@
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.ListIterator;
 import java.util.Random;
@@ -43,16 +46,16 @@ class MyDealer implements Runnable {
     public void run() {
         while (true) {
             synchronized (gameData.lock1) { // aqquire lock on gameData object
-                
+
                 // check if any of the player has succeded
-                if (this.hasPlayerSucceded(gameData.playerSuccessFlag)) { 
+                if (this.hasPlayerSucceded(gameData.playerSuccessFlag)) {
 
                     gameData.isGameComplete = true;
                     gameData.lock1.notifyAll();
                     System.out.println("Dealer has found some player succeded");
                     break;
 
-                // check if all players have completed their chances
+                    // check if all players have completed their chances
                 } else if (this.hasChanceCompleted(gameData.playerChanceFlag)) {
                     gameData.noAnnouncedFlag = false;
                     for (int i = 0; i < gameData.playerChanceFlag.length; i++) {
@@ -68,8 +71,27 @@ class MyDealer implements Runnable {
                         break;
                     }
 
-                    gameData.announcedNumbers.add(randInt(0, 50)); // generate a new number and add to the announcedNumbers ArrayList
-                    gameData.noAnnouncedFlag = true; // declare that a new number has been generated 
+                    System.out.println("\nAnnounce new number for this round -");
+                    while (true) { // loop to validate and take input from the user (as dealer)
+                        try {
+                            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+                            int i = Integer.parseInt(br.readLine()); // for Integer Input
+                            if (i > 50 || i < 0) {
+                                System.out.println("plaease enter number from 0-50");
+                                continue;
+                            }
+                            gameData.announcedNumbers.add(i);
+                            break;
+                        } catch (IOException ioe) {
+                            System.out.println("Please enter number and not string");
+                            continue;
+                        }
+                    }
+
+                    // gameData.announcedNumbers.add(randInt(0, 50)); // generate a new number and
+                    // add to the announcedNumbers ArrayList
+                    gameData.noAnnouncedFlag = true; // declare that a new number has been generated
                     gameData.currentDraw += 1; // increase the round count
 
                     System.out.println("\nRound Number - " + gameData.currentDraw + ", number announced by Dealer - "
@@ -81,10 +103,10 @@ class MyDealer implements Runnable {
                         System.out.println("interrupted during sleep MyDealer");
                     }
 
-                    // notify all threads that a new number has been generated 
+                    // notify all threads that a new number has been generated
                     gameData.lock1.notifyAll();
                     try {
-                        gameData.lock1.wait(); // release lock on gameData 
+                        gameData.lock1.wait(); // release lock on gameData
                     } catch (Exception e) {
                         System.out.println("exception caught while lock1.wait in dealer");
                     }
@@ -92,7 +114,8 @@ class MyDealer implements Runnable {
             }
         }
 
-        // when above while loop breaks out check what is the reason for dealer to finish game
+        // when above while loop breaks out check what is the reason for dealer to
+        // finish game
         if (this.maxDrawsReached) {
             System.out.println("Dealer is exiting because max draws have reached");
         } else {
@@ -114,7 +137,7 @@ class MyPlayer implements Runnable {
     private ArrayList<Integer> numbersFound; // ArrayList that holds the numbers that have bee striked out by the player
     private ArrayList<Integer> ticket = new ArrayList<Integer>(); // Players ticket
 
-    public MyPlayer(MyGameData gameData, int id) { // constructor 
+    public MyPlayer(MyGameData gameData, int id) { // constructor
 
         this.id = id;
         this.gameData = gameData;
@@ -138,28 +161,32 @@ class MyPlayer implements Runnable {
         while (true) {
             synchronized (gameData.lock1) { // aquire lock on gameData object
 
-                // check whether game is not complete and new number has been announced and player has not already played.
+                // check whether game is not complete and new number has been announced and
+                // player has not already played.
                 if (!gameData.isGameComplete && gameData.noAnnouncedFlag && !gameData.playerChanceFlag[this.id]) {
-
 
                     ListIterator<Integer> ticketItr = ticket.listIterator();
                     boolean numberOnTicket = false; // boolean to determine whether number was found on the ticket
                     boolean numberAlreadyFound = false; // boolean to determine number was not already found
-   
+
                     while (ticketItr.hasNext()) { // iterate through the player ticket
 
-                        // check whether number on the ticket is equal to current number announced by the dealer
+                        // check whether number on the ticket is equal to current number announced by
+                        // the dealer
                         if (ticketItr.next() == gameData.announcedNumbers.get(gameData.currentDraw)) {
-                            
+
                             numberOnTicket = true; // set true because number was found on the ticket
                             ListIterator<Integer> announcedIterator = this.numbersFound.listIterator();
 
-                            while (announcedIterator.hasNext()) { // iterate through the numbers already found by the player in previous draws
+                            while (announcedIterator.hasNext()) { // iterate through the numbers already found by the
+                                                                  // player in previous draws
 
-                                // check if number in current draw is equal to the numbers already striked off by the player in previous draws
+                                // check if number in current draw is equal to the numbers already striked off
+                                // by the player in previous draws
                                 if (gameData.announcedNumbers.get(gameData.currentDraw) == announcedIterator.next()) {
-                                    
-                                    numberAlreadyFound = true; // set true if number in current draw is equal to any number previously found by the player
+
+                                    numberAlreadyFound = true; // set true if number in current draw is equal to any
+                                                               // number previously found by the player
 
                                     break;
                                 } else {
@@ -170,15 +197,16 @@ class MyPlayer implements Runnable {
                     }
 
                     // check for both the conditions before adding number to the numbersFound array
-                    if (numberOnTicket && !numberAlreadyFound) { 
+                    if (numberOnTicket && !numberAlreadyFound) {
                         this.numbersFound.add(gameData.announcedNumbers.get(gameData.currentDraw));
-                        System.out.println("Thread " + this.id + " found "
+                        System.out.println("Player " + this.id + " found "
                                 + gameData.announcedNumbers.get(gameData.currentDraw) + " on ticket");
                     }
 
                     gameData.playerChanceFlag[this.id] = true; // player declare that his chance is complete
-                    
-                    //players checks that he has found 3 numbers then declare that he has won if condition true
+
+                    // players checks that he has found 3 numbers then declare that he has won if
+                    // condition true
                     if (numbersFound.size() >= 3) {
                         gameData.playerSuccessFlag[this.id] = true;
                         gameData.succededPlayers.add(this.id);
@@ -186,24 +214,27 @@ class MyPlayer implements Runnable {
 
                     // notify other threads that this player has finished has chance
                     gameData.lock1.notifyAll();
-                    try { 
-                        gameData.lock1.wait(); // give up lock on gameData and wait till some other thread calls notifyAll()
+                    try {
+                        gameData.lock1.wait(); // give up lock on gameData and wait till some other thread calls
+                                               // notifyAll()
                     } catch (Exception e) {
                         System.out.println("exception caught while lock1.wait in thread" + this.id);
                     }
 
                 } else {
-                    
-                    if (gameData.isGameComplete) { // check if game has completed, if so break out of loop in turn killing this loop
+
+                    if (gameData.isGameComplete) { // check if game has completed, if so break out of loop in turn
+                                                   // killing this loop
                         System.out.println("Player " + this.id + " has finished his game");
                         break;
-                    
+
                     } else {
-                         // notify other threads that this player has finished has chance
+                        // notify other threads that this player has finished has chance
                         gameData.lock1.notifyAll();
 
                         try {
-                            gameData.lock1.wait(); // give up lock on gameData and wait till some other thread calls notifyAll()
+                            gameData.lock1.wait(); // give up lock on gameData and wait till some other thread calls
+                                                   // notifyAll()
                         } catch (Exception e) {
                             System.out.println("exception caught while lock1.wait in thread" + this.id);
                         }
@@ -214,20 +245,20 @@ class MyPlayer implements Runnable {
     }
 }
 
-
-
 class MyGameData {
 
     public ArrayList<Integer> announcedNumbers = new ArrayList<Integer>(); // All the numbers announced by dealer
     public boolean isGameComplete = false; // Flag that describes State of game - Complete (or) In-progress
     public boolean noAnnouncedFlag = false; // Flag set true by dealer to indicate that a new number has been announced
     public boolean[] playerSuccessFlag; // boolean array that players use to declare that they have won the game
-    public boolean[] playerChanceFlag; // boolean array that players use to deeclare that they have completed their chance
+    public boolean[] playerChanceFlag; // boolean array that players use to deeclare that they have completed their
+                                       // chance
     public int MAX_DRAWS = 10; // Number of rounds for which the game will go on.
-    public int currentDraw = -1; // Number that dealer sets to declare to players which round of game is going on.
-    public ArrayList<Integer> succededPlayers = new ArrayList<Integer>(); // Array that a player uses when he has succeeded to add his id. 
+    public int currentDraw = -1; // Number that dealer sets to declare to players which round of game is going
+                                 // on.
+    public ArrayList<Integer> succededPlayers = new ArrayList<Integer>(); // Array that a player uses when he has
+                                                                          // succeeded to add his id.
     public Object lock1 = new Object(); // object used by Dealer and players to aqquire lock on gameData
-
 
     MyGameData(int numberPlayers) { // Constructor
         this.playerSuccessFlag = new boolean[numberPlayers];
@@ -243,19 +274,17 @@ class MyGameData {
     }
 }
 
-
-
-
 public class MyTambolaGame {
     public static void main(String[] args) {
 
-        int numberOfPlayers = 50;
+        int numberOfPlayers = 5;
 
         // USE OF COLLECTIONS
-        final ArrayList<MyPlayer> players = new ArrayList<MyPlayer>();  // arraylist of all players
+        final ArrayList<MyPlayer> players = new ArrayList<MyPlayer>(); // arraylist of all players
         final ArrayList<Thread> playerThreads = new ArrayList<Thread>(); // arraylist of all player threads
 
-        final MyGameData game = new MyGameData(numberOfPlayers); // declare game data object and initiate for the number of players
+        final MyGameData game = new MyGameData(numberOfPlayers); // declare game data object and initiate for the number
+                                                                 // of players
 
         final MyDealer dealer = new MyDealer(game); // Dealer object
         Thread dealerThread = new Thread(dealer); // dealer thread
@@ -291,17 +320,21 @@ public class MyTambolaGame {
         // declare results
         System.out.println("----------RESULTS----------");
 
-
         for (int i = 0; i < game.playerSuccessFlag.length; i++) {
             if (game.playerSuccessFlag[i]) {
                 System.out.println("Player " + i + " has won the game");
             }
         }
 
-        System.out.println("---------------------------");
+        if (game.succededPlayers.size() == 0) {
+            System.out.println("None of the players won the game !");
+        } else {
+            System.out.println("---------------------------");
 
-        for (int i = 0; i < game.succededPlayers.size(); i++) {
-            System.out.println("Player to report success at Position " + (i + 1) + " is Player - " + game.succededPlayers.get(i));
+            for (int i = 0; i < game.succededPlayers.size(); i++) {
+                System.out.println("Player to report success at Position " + (i + 1) + " is Player - "
+                        + game.succededPlayers.get(i));
+            }
         }
     }
 }
