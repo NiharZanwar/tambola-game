@@ -247,6 +247,7 @@ class MyPlayer implements Runnable {
 
 class MyGameData {
 
+    private static MyGameData unique;
     public ArrayList<Integer> announcedNumbers = new ArrayList<Integer>(); // All the numbers announced by dealer
     public boolean isGameComplete = false; // Flag that describes State of game - Complete (or) In-progress
     public boolean noAnnouncedFlag = false; // Flag set true by dealer to indicate that a new number has been announced
@@ -260,7 +261,9 @@ class MyGameData {
                                                                           // succeeded to add his id.
     public Object lock1 = new Object(); // object used by Dealer and players to aqquire lock on gameData
 
-    MyGameData(int numberPlayers) { // Constructor
+    private MyGameData(int numberPlayers) { // Constructor
+        
+        
         this.playerSuccessFlag = new boolean[numberPlayers];
         this.playerChanceFlag = new boolean[numberPlayers];
 
@@ -272,18 +275,25 @@ class MyGameData {
             playerChanceFlag[i] = true;
         }
     }
+
+    public static MyGameData getInstance(int numberPlayers) {
+        if(unique == null){
+            unique = new MyGameData(numberPlayers);
+        }
+        return unique;
+    }
 }
 
 public class MyTambolaGame {
     public static void main(String[] args) {
 
-        int numberOfPlayers = 5;
+        int numberOfPlayers = Integer.parseInt(args[0]);
 
         // USE OF COLLECTIONS
         final ArrayList<MyPlayer> players = new ArrayList<MyPlayer>(); // arraylist of all players
         final ArrayList<Thread> playerThreads = new ArrayList<Thread>(); // arraylist of all player threads
 
-        final MyGameData game = new MyGameData(numberOfPlayers); // declare game data object and initiate for the number
+        final MyGameData game = MyGameData.getInstance(numberOfPlayers); // declare game data object and initiate for the number
                                                                  // of players
 
         final MyDealer dealer = new MyDealer(game); // Dealer object
